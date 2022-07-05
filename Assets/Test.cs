@@ -339,7 +339,7 @@ public class Test : MonoBehaviour
             solverVariables.Add(new SolverVariable {
                 Name = thrusters[i].CustomName,
                 Bound = new SolverBound { Lower = 0, Upper = 1 }, //Er 1 upperbound rigtig?
-                Goal = new SolverGoal { Priority = 4, Minimize = true } }); //Brug så meget thrust som muligt (skal det have større prio?
+                Goal = new SolverGoal { Priority = 5, Minimize = true } }); //Brug så meget thrust som muligt (skal det have større prio?
         }
 
         var solverIdentifiers = new List<SolverIdentifier>
@@ -372,7 +372,7 @@ public class Test : MonoBehaviour
             new SolverIdentifier{
                 Name="Cost",
                 Bound = new SolverBound{ Lower = 0, Upper = maximalCost },
-                Goal = new SolverGoal{ Priority = 3, Minimize = true} } //Betal lavest pris for energien
+                Goal = new SolverGoal{ Priority = 4, Minimize = true} } //Betal lavest pris for energien
         };
 
         //var solverIdentifiers = new List<SolverIdentifier>
