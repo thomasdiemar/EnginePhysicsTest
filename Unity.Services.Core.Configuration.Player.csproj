@@ -291,6 +291,9 @@
     <Reference Include="Microsoft.Solver.Foundation">
       <HintPath>Assets\Microsoft.Solver.Foundation.dll</HintPath>
     </Reference>
+    <Reference Include="Common.LinearProgramming.Test">
+      <HintPath>Assets\Common.LinearProgramming.Test.dll</HintPath>
+    </Reference>
     <Reference Include="mscorlib">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.4f1\Editor\Data\UnityReferenceAssemblies\unity-4.8-api\mscorlib.dll</HintPath>
     </Reference>
