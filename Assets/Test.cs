@@ -168,6 +168,7 @@ using Common.LinearProgramming.TestTools;
 class ThrusterInfo
 {
     //også id
+    public int Index;
     public string CustomName;
     public Vector3 LocalPosition;
     public Vector3 MaxTorque;
@@ -194,9 +195,9 @@ public class Test : MonoBehaviour
     // Start is called before the first frame update
     //Solver solver;
 
-    static Vector3 ControlThrustDirection = Vector3.up;
-    static Vector3 ControlTorqueDirection = Vector3.right;
-    static string filename = "Test_Unity_12_Engines_" + ControlThrustDirection.ToString() + "_" + ControlTorqueDirection.ToString();
+    static Vector3 ControlThrustDirection = Vector3.zero;
+    static Vector3 ControlTorqueDirection = Vector3.forward;
+    static string filename = "Test_Unity_8_3_way_Engines_" + ControlThrustDirection.ToString() + "_" + ControlTorqueDirection.ToString();
 
 
     List<ThrusterInfo> thrusters = new List<ThrusterInfo>();
@@ -208,6 +209,24 @@ public class Test : MonoBehaviour
        
         Debug.Log("FINDME");
 
+        var maximalForce = new Dictionary<Vector3, double>
+        {
+            { Vector3.right, 0 },   //{1,0,0}
+            { Vector3.left, 0 },    //{-1,0,0}
+            { Vector3.up, 0 },      //{0,1,0}
+            { Vector3.down, 0 },    //{0,-1,0}
+            { Vector3.forward, 0 }, //{0,0,1}
+            { Vector3.back, 0 }     //{0,0,-1}
+        };
+        var maximalTorque = new Dictionary<Vector3, double>
+        {
+            { Vector3.right, 0 },   //{1,0,0}
+            { Vector3.left, 0 },    //{-1,0,0}
+            { Vector3.up, 0 },      //{0,1,0}
+            { Vector3.down, 0 },    //{0,-1,0}
+            { Vector3.forward, 0 }, //{0,0,1}
+            { Vector3.back, 0 }     //{0,0,-1}
+        };
 
         //var Capsule = GetComponent<Component>();
         //var Capsule = GetComponent<GameObject>();
@@ -229,55 +248,54 @@ public class Test : MonoBehaviour
         var children = GetComponents<FixedJoint>();
 
         // children = children.Where(x => x.tag == "Thruster").ToArray();
-
+        var index = 0;
         children.ToList().ForEach(x =>
         {
-            var thruster = new ThrusterInfo();
-            //builder.AppendLine("  " + x.name + " - " + x.GetType().ToString());
-            //Capsule - UnityEngine.FixedJoint
+            maximalForce.Keys.Take(3).ToList().ForEach(mf =>
+            {
+                var thruster = new ThrusterInfo();
 
-            var connected = x.connectedBody;
-            //builder.AppendLine("  " + connected.name + " - " + connected.GetType().ToString());
-            //Cylinder 1 - UnityEngine.Rigidbody
-            //var thrustercenterofmass = connected.centerOfMass;
-            //builder.AppendLine("Thruster Center of Mass: " + thrustercenterofmass.ToString());
+                var connected = x.connectedBody;
 
-            thruster.CustomName = connected.name;
+                thruster.CustomName = connected.name + mf.ToString();
 
+                var constantforce = connected.GetComponentInParent<ConstantForce>();
+                var constantforce2 = mf * 100;
+                //thruster.MaxForce = (constantforce.relativeForce); // * connected.mass;
+                thruster.MaxForce = constantforce2; // * connected.mass;
 
-
-            var constantforce = connected.GetComponentInParent<ConstantForce>();
-            thruster.MaxForce = (constantforce.relativeForce); // * connected.mass;
-            thruster.CurrentForce = constantforce;
-            thruster.Mass = connected.mass;
-
-            var relativeposition = constantforce.transform.localPosition;
+                thruster.CurrentForce = constantforce;
+                thruster.CurrentForce.relativeForce = Vector3.zero;
 
 
-            var transform = connected.GetComponentInParent<Transform>();
-            //builder.AppendLine("  " + transform.name + " - " + transform.GetType().ToString());
-            //Cylinder 1 - UnityEngine.Transform
-            //var relativeposition = transform.localPosition;
+                thruster.Mass = connected.mass;
+                var relativeposition = constantforce.transform.localPosition;
 
-            //var relativeposition = connected.centerOfMass;
-            //builder.AppendLine("Thruster relative position: " + relativeposition.ToString());
 
-            thruster.LocalPosition = relativeposition;
+                var transform = connected.GetComponentInParent<Transform>();
+                //builder.AppendLine("  " + transform.name + " - " + transform.GetType().ToString());
+                //Cylinder 1 - UnityEngine.Transform
+                //var relativeposition = transform.localPosition;
 
-            ///thruster.MaxForce = new Vector3(100f, 100f, 100f);
-            //Distance Vector, r:
-            //Force Vector, F:
-            var r = thruster.LocalPosition - shipcenterofmass;
-            builder.AppendLine("l: " + r.ToString());
-            var T = Vector3.Cross(r, thruster.MaxForce);
+                //var relativeposition = connected.centerOfMass;
+                //builder.AppendLine("Thruster relative position: " + relativeposition.ToString());
 
-            thruster.MaxTorque = T;
-            thruster.MaxCost = 100;
+                thruster.LocalPosition = relativeposition;
 
-            thrusters.Add(thruster);
+                ///thruster.MaxForce = new Vector3(100f, 100f, 100f);
+                //Distance Vector, r:
+                //Force Vector, F:
+                var r = thruster.LocalPosition - shipcenterofmass;
+                builder.AppendLine("l: " + r.ToString());
+                var T = Vector3.Cross(r, thruster.MaxForce);
 
-            builder.Append(thruster.ToString());
+                thruster.MaxTorque = T;
+                thruster.MaxCost = 100;
 
+                thrusters.Add(thruster);
+
+                builder.Append(thruster.ToString());
+            });
         });
 
 
@@ -293,41 +311,38 @@ public class Test : MonoBehaviour
 
         int[] variables = new int[variablecount];
 
-        var maximalForce = new Dictionary<Vector3, double>
-        {
-            { Vector3.right, 0 },   //{1,0,0}
-            { Vector3.left, 0 },    //{-1,0,0}
-            { Vector3.up, 0 },      //{0,1,0}
-            { Vector3.down, 0 },    //{0,-1,0}
-            { Vector3.forward, 0 }, //{0,0,1}
-            { Vector3.back, 0 }     //{0,0,-1}
-        };
-        var maximalTorque = new Dictionary<Vector3, double>
-        {
-            { Vector3.right, 0 },   //{1,0,0}
-            { Vector3.left, 0 },    //{-1,0,0}
-            { Vector3.up, 0 },      //{0,1,0}
-            { Vector3.down, 0 },    //{0,-1,0}
-            { Vector3.forward, 0 }, //{0,0,1}
-            { Vector3.back, 0 }     //{0,0,-1}
-        };
+        
         var maximalCost = 0.0;
 
         for (int i = 0; i < variablecount; i++)
         {
-            maximalForce[Vector3.right] += thrusters[i].MaxForce.x > 0.0 ? thrusters[i].MaxForce.x : 0.0;
-            maximalForce[Vector3.left] += thrusters[i].MaxForce.x < 0.0 ? thrusters[i].MaxForce.x : 0.0;
-            maximalForce[Vector3.up] += thrusters[i].MaxForce.y > 0.0 ? thrusters[i].MaxForce.y : 0.0;
-            maximalForce[Vector3.down] += thrusters[i].MaxForce.y < 0.0 ? thrusters[i].MaxForce.y : 0.0;
-            maximalForce[Vector3.forward] += thrusters[i].MaxForce.z > 0.0 ? thrusters[i].MaxForce.z : 0.0;
-            maximalForce[Vector3.back] += thrusters[i].MaxForce.z < 0.0 ? thrusters[i].MaxForce.z : 0.0;
+            //maximalForce[Vector3.right] += thrusters[i].MaxForce.x > 0.0 ? thrusters[i].MaxForce.x : 0.0;
+            //maximalForce[Vector3.left] += thrusters[i].MaxForce.x < 0.0 ? thrusters[i].MaxForce.x : 0.0;
+            //maximalForce[Vector3.up] += thrusters[i].MaxForce.y > 0.0 ? thrusters[i].MaxForce.y : 0.0;
+            //maximalForce[Vector3.down] += thrusters[i].MaxForce.y < 0.0 ? thrusters[i].MaxForce.y : 0.0;
+            //maximalForce[Vector3.forward] += thrusters[i].MaxForce.z > 0.0 ? thrusters[i].MaxForce.z : 0.0;
+            //maximalForce[Vector3.back] += thrusters[i].MaxForce.z < 0.0 ? thrusters[i].MaxForce.z : 0.0;
 
-            maximalTorque[Vector3.right] += thrusters[i].MaxTorque.x > 0.0 ? thrusters[i].MaxTorque.x : 0.0;
-            maximalTorque[Vector3.left] += thrusters[i].MaxTorque.x < 0.0 ? thrusters[i].MaxTorque.x : 0.0;
-            maximalTorque[Vector3.up] += thrusters[i].MaxTorque.y > 0.0 ? thrusters[i].MaxTorque.y : 0.0;
-            maximalTorque[Vector3.down] += thrusters[i].MaxTorque.y < 0.0 ? thrusters[i].MaxTorque.y : 0.0;
-            maximalTorque[Vector3.forward] += thrusters[i].MaxTorque.z > 0.0 ? thrusters[i].MaxTorque.z : 0.0;
-            maximalTorque[Vector3.back] += thrusters[i].MaxTorque.z < 0.0 ? thrusters[i].MaxTorque.z : 0.0;
+            //maximalTorque[Vector3.right] += thrusters[i].MaxTorque.x > 0.0 ? thrusters[i].MaxTorque.x : 0.0;
+            //maximalTorque[Vector3.left] += thrusters[i].MaxTorque.x < 0.0 ? thrusters[i].MaxTorque.x : 0.0;
+            //maximalTorque[Vector3.up] += thrusters[i].MaxTorque.y > 0.0 ? thrusters[i].MaxTorque.y : 0.0;
+            //maximalTorque[Vector3.down] += thrusters[i].MaxTorque.y < 0.0 ? thrusters[i].MaxTorque.y : 0.0;
+            //maximalTorque[Vector3.forward] += thrusters[i].MaxTorque.z > 0.0 ? thrusters[i].MaxTorque.z : 0.0;
+            //maximalTorque[Vector3.back] += thrusters[i].MaxTorque.z < 0.0 ? thrusters[i].MaxTorque.z : 0.0;
+
+            maximalForce[Vector3.right] += thrusters[i].MaxForce.x ;
+            maximalForce[Vector3.left] += thrusters[i].MaxForce.x;
+            maximalForce[Vector3.up] += thrusters[i].MaxForce.y;
+            maximalForce[Vector3.down] -= thrusters[i].MaxForce.y;
+            maximalForce[Vector3.forward] -= thrusters[i].MaxForce.z ;
+            maximalForce[Vector3.back] -=  thrusters[i].MaxForce.z;
+
+            maximalTorque[Vector3.right] +=  thrusters[i].MaxTorque.x;
+            maximalTorque[Vector3.left] +=  thrusters[i].MaxTorque.x ;
+            maximalTorque[Vector3.up] +=  thrusters[i].MaxTorque.y ;
+            maximalTorque[Vector3.down] -=  thrusters[i].MaxTorque.y;
+            maximalTorque[Vector3.forward] -=  thrusters[i].MaxTorque.z;
+            maximalTorque[Vector3.back] -=  thrusters[i].MaxTorque.z ;
 
             //maximalCost +=
             //    thrusters[i].MaxCost > 0.0 &&
@@ -566,14 +581,14 @@ public class Test : MonoBehaviour
         ///do pr profile
         var children2 = GetComponents<FixedJoint>();
 
-        children2.ToList().ForEach(x =>
-        {
-            var connected = x.connectedBody;
-            var constantforce = connected.GetComponentInParent<ConstantForce>();
-            //constantforce.relativeForce =
-            var multiplier = solverResult.Variables.Where(x => x.Name == connected.name).First().Value;
-            constantforce.relativeForce = new Vector3(constantforce.relativeForce.x * (float)multiplier, constantforce.relativeForce.y * (float)multiplier, constantforce.relativeForce.z * (float)multiplier);
-        });
+        //children2.ToList().ForEach(x =>
+        //{
+        //    var connected = x.connectedBody;
+        //    var constantforce = connected.GetComponentInParent<ConstantForce>();
+        //    //constantforce.relativeForce =
+        //    var multiplier = solverResult.Variables.Where(x => x.Name == connected.name).First().Value;
+        //    constantforce.relativeForce = new Vector3(constantforce.relativeForce.x * (float)multiplier, constantforce.relativeForce.y * (float)multiplier, constantforce.relativeForce.z * (float)multiplier);
+        //});
     }
 
     // Update is called once per frame
