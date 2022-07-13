@@ -194,16 +194,18 @@ public class Test : MonoBehaviour
     // Start is called before the first frame update
     //Solver solver;
 
-    string filename = "Test_Unity_12_Engines_torque_up";
-    Vector3 ControlThrustDirection = Vector3.zero;
-    Vector3 ControlTorqueDirection = Vector3.up;
+    static Vector3 ControlThrustDirection = Vector3.up;
+    static Vector3 ControlTorqueDirection = Vector3.right;
+    static string filename = "Test_Unity_12_Engines_" + ControlThrustDirection.ToString() + "_" + ControlTorqueDirection.ToString();
+
+
     List<ThrusterInfo> thrusters = new List<ThrusterInfo>();
 
     Dictionary<Vector3, SolverResult> SolverResults = new Dictionary<Vector3, SolverResult>();
 
     void Start()
     {
-
+       
         Debug.Log("FINDME");
 
 
@@ -319,12 +321,14 @@ public class Test : MonoBehaviour
             maximalForce[Vector3.down] += thrusters[i].MaxForce.y < 0.0 ? thrusters[i].MaxForce.y : 0.0;
             maximalForce[Vector3.forward] += thrusters[i].MaxForce.z > 0.0 ? thrusters[i].MaxForce.z : 0.0;
             maximalForce[Vector3.back] += thrusters[i].MaxForce.z < 0.0 ? thrusters[i].MaxForce.z : 0.0;
+
             maximalTorque[Vector3.right] += thrusters[i].MaxTorque.x > 0.0 ? thrusters[i].MaxTorque.x : 0.0;
             maximalTorque[Vector3.left] += thrusters[i].MaxTorque.x < 0.0 ? thrusters[i].MaxTorque.x : 0.0;
             maximalTorque[Vector3.up] += thrusters[i].MaxTorque.y > 0.0 ? thrusters[i].MaxTorque.y : 0.0;
             maximalTorque[Vector3.down] += thrusters[i].MaxTorque.y < 0.0 ? thrusters[i].MaxTorque.y : 0.0;
-            maximalTorque[Vector3.forward] += thrusters[i].MaxTorque.z > 0.0 ? thrusters[i].MaxTorque.y : 0.0;
-            maximalTorque[Vector3.back] += thrusters[i].MaxTorque.z < 0.0 ? thrusters[i].MaxTorque.y : 0.0;
+            maximalTorque[Vector3.forward] += thrusters[i].MaxTorque.z > 0.0 ? thrusters[i].MaxTorque.z : 0.0;
+            maximalTorque[Vector3.back] += thrusters[i].MaxTorque.z < 0.0 ? thrusters[i].MaxTorque.z : 0.0;
+
             //maximalCost +=
             //    thrusters[i].MaxCost > 0.0 &&
             //    (thrusters[i].MaxForce.x > 0 && ControlThrustDirection.x > 0) || (thrusters[i].MaxForce.x < 0 && ControlThrustDirection.x < 0) ||
@@ -340,49 +344,75 @@ public class Test : MonoBehaviour
             maximalCost += thrusters[i].MaxCost > 0.0 ? thrusters[i].MaxCost : 0 ;
         }
 
+        // 4 active
+        // 3 active
+        // 2 inactive
+        // 1 inactive
+
+        //thust mindre når torque
+        int thrustpriorityactive = ControlTorqueDirection != Vector3.zero ? 3 : 4; //foruden alle er sat og inaktive udgår
+        int thrustpriorityinactive = ControlTorqueDirection != Vector3.zero ? 1 : 2;
+
+        //torque mindre når thrust og ikke torque
+        int torquepriorityactive = ControlTorqueDirection == Vector3.zero || ControlThrustDirection != Vector3.zero ? 3 : 4;
+        int torquepriorityinactive = ControlTorqueDirection == Vector3.zero || ControlThrustDirection != Vector3.zero ? 1 : 2; //foruden alle er sat og inaktive udgår
+
+        //int thrustpriorityactive = 4; //foruden alle er sat og inaktive udgår
+        //int thrustpriorityinactive = 2;
+
+        //torque mindre når thrust og ikke torque
+        //int torquepriorityactive = 3;
+        //int torquepriorityinactive = 1;
+
+        int costpriority = thrustpriorityactive == 4 || torquepriorityactive == 4 ? 5 : 4;
+        int thrusterpriority = costpriority + 1;
+
+
         var solverVariables = new List<SolverVariable>();
         for (int i = 0; i < variablecount; i++)
         {
             solverVariables.Add(new SolverVariable {
                 Name = thrusters[i].CustomName,
-                Bound = new SolverBound { Lower = 0, Upper = 1 }, //Er 1 upperbound rigtig?
-                Goal = new SolverGoal { Priority = 5, Minimize = true },
-                Exstra = thrusters[i].LocalPosition.ToString()
+                Bound = new SolverRequestBound { Lower = 0, Upper = 1 }, //Er 1 upperbound rigtig?
+                Goal = new SolverGoal { Priority = thrusterpriority, Minimize = true },
+                Info = thrusters[i].LocalPosition.ToString()
             }); //Brug så meget thrust som muligt (skal det have større prio?
                 
         }
+
+
 
         var solverIdentifiers = new List<SolverIdentifier>
         {
             new SolverIdentifier{
                 Name="Fx",
-                Bound = new SolverBound { Lower = ControlThrustDirection.x < 0 ? maximalForce[Vector3.left] : 0, Upper = ControlThrustDirection.x > 0 ?  maximalForce[Vector3.right] : 0 },
-                Goal = new SolverGoal { Priority = ControlThrustDirection.x != 0 ? 1 : 1, Minimize = ControlThrustDirection.x <= 0 } },
+                Bound = new SolverRequestBound { Lower = ControlThrustDirection.x < 0 ? (int)maximalForce[Vector3.left] : 0, Upper = ControlThrustDirection.x > 0 ? (int)maximalForce[Vector3.right] : 0 },
+                Goal = new SolverGoal { Priority = ControlThrustDirection.x != 0 ? thrustpriorityactive : thrustpriorityinactive, Minimize = ControlThrustDirection.x <= 0 } },
             new SolverIdentifier{
                 Name="Fy",
-                //Bound = new SolverBound { Lower = maximalForce[Vector3.down], Upper = maximalForce[Vector3.up]  },
-                Bound = new SolverBound { Lower = ControlThrustDirection.y < 0 ? maximalForce[Vector3.down] : 0, Upper = ControlThrustDirection.y > 0 ? maximalForce[Vector3.up] : 0 },
-                Goal = new SolverGoal { Priority = ControlThrustDirection.y != 0 ? 1 : 1, Minimize = ControlThrustDirection.y <= 0 } },
+                //Bound = new SolverRequestBound { Lower = maximalForce[Vector3.down], Upper = maximalForce[Vector3.up]  },
+                Bound = new SolverRequestBound { Lower = ControlThrustDirection.y < 0 ? (int)maximalForce[Vector3.down] : 0, Upper = ControlThrustDirection.y > 0 ? (int)maximalForce[Vector3.up] : 0 },
+                Goal = new SolverGoal { Priority = ControlThrustDirection.y != 0 ? thrustpriorityactive : thrustpriorityinactive, Minimize = ControlThrustDirection.y <= 0 } },
             new SolverIdentifier{
                 Name="Fz", 
-                Bound = new SolverBound { Lower = ControlThrustDirection.z < 0 ? maximalForce[Vector3.back] : 0, Upper = ControlThrustDirection.z > 0 ? maximalForce[Vector3.forward] : 0 },
-                Goal = new SolverGoal { Priority = ControlThrustDirection.z != 0 ? 1 : 1, Minimize = ControlThrustDirection.z <= 0 } },
+                Bound = new SolverRequestBound { Lower = ControlThrustDirection.z < 0 ? (int)maximalForce[Vector3.back] : 0, Upper = ControlThrustDirection.z > 0 ? (int)maximalForce[Vector3.forward] : 0 },
+                Goal = new SolverGoal { Priority = ControlThrustDirection.z != 0 ? thrustpriorityactive : thrustpriorityinactive, Minimize = ControlThrustDirection.z <= 0 } },
             new SolverIdentifier{
                 Name="Tx",
-                Bound = new SolverBound { Lower = ControlTorqueDirection.x < 0 ? maximalTorque[Vector3.left] : 0, Upper = ControlTorqueDirection.x > 0 ? maximalTorque[Vector3.right] : 0 },
-                Goal = new SolverGoal { Priority = ControlTorqueDirection.x != 0 ? 3 : 2, Minimize = ControlTorqueDirection.x <= 0 } },
+                Bound = new SolverRequestBound { Lower = ControlTorqueDirection.x < 0 ? (int)maximalTorque[Vector3.left] : 0, Upper = ControlTorqueDirection.x > 0 ? (int)maximalTorque[Vector3.right] : 0 },
+                Goal = new SolverGoal { Priority = ControlTorqueDirection.x != 0 ? torquepriorityactive : torquepriorityinactive, Minimize = ControlTorqueDirection.x <= 0 } },
             new SolverIdentifier{
                 Name="Ty",
-                Bound = new SolverBound { Lower = ControlTorqueDirection.y < 0 ? maximalTorque[Vector3.down] : 0, Upper = ControlTorqueDirection.y > 0 ? maximalTorque[Vector3.up] : 0 },
-                Goal = new SolverGoal { Priority = ControlTorqueDirection.y != 0 ? 3 : 2, Minimize = ControlTorqueDirection.y <= 0 } },
+                Bound = new SolverRequestBound { Lower = ControlTorqueDirection.y < 0 ? (int)maximalTorque[Vector3.down] : 0, Upper = ControlTorqueDirection.y > 0 ? (int)maximalTorque[Vector3.up] : 0 },
+                Goal = new SolverGoal { Priority = ControlTorqueDirection.y != 0 ? torquepriorityactive : torquepriorityinactive, Minimize = ControlTorqueDirection.y <= 0 } },
             new SolverIdentifier{
                 Name="Tz",
-                Bound = new SolverBound { Lower = ControlTorqueDirection.z < 0 ? maximalTorque[Vector3.back] : 0, Upper = ControlTorqueDirection.z > 0 ? maximalTorque[Vector3.forward] : 0 },
-                Goal = new SolverGoal { Priority = ControlTorqueDirection.z != 0 ? 3 : 2, Minimize = ControlTorqueDirection.z <= 0 } },
+                Bound = new SolverRequestBound { Lower = ControlTorqueDirection.z < 0 ? (int)maximalTorque[Vector3.back] : 0, Upper = ControlTorqueDirection.z > 0 ? (int)maximalTorque[Vector3.forward] : 0 },
+                Goal = new SolverGoal { Priority = ControlTorqueDirection.z != 0 ? torquepriorityactive : torquepriorityinactive, Minimize = ControlTorqueDirection.z <= 0 } },
             new SolverIdentifier{
                 Name="Cost",
-                Bound = new SolverBound{ Lower = 0, Upper = maximalCost },
-                Goal = new SolverGoal{ Priority = 4, Minimize = true} } //Betal lavest pris for energien
+                Bound = new SolverRequestBound{ Lower = 0, Upper = (int)maximalCost },
+                Goal = new SolverGoal{ Priority = costpriority, Minimize = true} } //Betal lavest pris for energien
         };
 
         //var solverIdentifiers = new List<SolverIdentifier>
@@ -459,13 +489,13 @@ public class Test : MonoBehaviour
 
         for (int i = 0; i < variablecount; i++)
         {
-            solverRequest.Coefficients[i, 0] = thrusters[i].MaxForce.x;
-            solverRequest.Coefficients[i, 1] = thrusters[i].MaxForce.y;// * -1; //Når der minimeres vendes coefficenten (og hvad mere skal der ske?)
-            solverRequest.Coefficients[i, 2] = thrusters[i].MaxForce.z;
-            solverRequest.Coefficients[i, 3] = thrusters[i].MaxTorque.x;
-            solverRequest.Coefficients[i, 4] = thrusters[i].MaxTorque.y;
-            solverRequest.Coefficients[i, 5] = thrusters[i].MaxTorque.z;
-            solverRequest.Coefficients[i, 6] = thrusters[i].MaxCost;
+            solverRequest.Coefficients[i, 0] = (int)thrusters[i].MaxForce.x;
+            solverRequest.Coefficients[i, 1] = (int)thrusters[i].MaxForce.y;// * -1; //Når der minimeres vendes coefficenten (og hvad mere skal der ske?)
+            solverRequest.Coefficients[i, 2] = (int)thrusters[i].MaxForce.z;
+            solverRequest.Coefficients[i, 3] = (int)thrusters[i].MaxTorque.x;
+            solverRequest.Coefficients[i, 4] = (int)thrusters[i].MaxTorque.y;
+            solverRequest.Coefficients[i, 5] = (int)thrusters[i].MaxTorque.z;
+            solverRequest.Coefficients[i, 6] = (int)thrusters[i].MaxCost;
         }
 
         //////
@@ -484,16 +514,17 @@ public class Test : MonoBehaviour
 
         //var solverResult = solver.GetResult();
         SolverResult solverResult = null;
-        try
-        {
-            TestUtil.WriteRequest(solverRequest, filename, "Unity");
+        //try
+        //{
+            filename = TestUtil.WriteRequest(solverRequest, filename, "Unity");
 
-            solverResult = TestUtil.TestFile(filename, "Unity", false);
-        }
-        catch
-        {
+        Debug.Log(filename);
+        solverResult = TestUtil.TestFile(filename, "Unity", false);
+        //}
+        //catch
+        //{
 
-        }
+        //}
 
 
         
