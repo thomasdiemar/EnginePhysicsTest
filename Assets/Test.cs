@@ -1,11 +1,11 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
 using Newtonsoft.Json;
 using Common.LinearProgramming;
 using Common.LinearProgramming.TestTools;
-
+  
 //#region Generic Solver
 //public class SolverRequest
 //{
@@ -55,7 +55,7 @@ using Common.LinearProgramming.TestTools;
 //        Data = variables.Select(x => new VariableResult { Name = x.Name, Value = 0 }).ToList();
 //    }
 //    public List<VariableResult> Data { get; }
-//    //Burde være Dict<navn(string)
+//    //Burde vÃ¦re Dict<navn(string)
 //}
 
 //public class Solver
@@ -167,7 +167,7 @@ using Common.LinearProgramming.TestTools;
 //}
 class ThrusterInfo
 {
-    //også id
+    //ogsÃ¥ id
     public int Index;
     public string CustomName;
     public Vector3 LocalPosition;
@@ -316,33 +316,33 @@ public class Test : MonoBehaviour
 
         for (int i = 0; i < variablecount; i++)
         {
-            //maximalForce[Vector3.right] += thrusters[i].MaxForce.x > 0.0 ? thrusters[i].MaxForce.x : 0.0;
-            //maximalForce[Vector3.left] += thrusters[i].MaxForce.x < 0.0 ? thrusters[i].MaxForce.x : 0.0;
-            //maximalForce[Vector3.up] += thrusters[i].MaxForce.y > 0.0 ? thrusters[i].MaxForce.y : 0.0;
-            //maximalForce[Vector3.down] += thrusters[i].MaxForce.y < 0.0 ? thrusters[i].MaxForce.y : 0.0;
-            //maximalForce[Vector3.forward] += thrusters[i].MaxForce.z > 0.0 ? thrusters[i].MaxForce.z : 0.0;
-            //maximalForce[Vector3.back] += thrusters[i].MaxForce.z < 0.0 ? thrusters[i].MaxForce.z : 0.0;
+            maximalForce[Vector3.right] += thrusters[i].MaxForce.x > 0.0 ? thrusters[i].MaxForce.x : 0.0;
+            maximalForce[Vector3.left] += thrusters[i].MaxForce.x < 0.0 ? thrusters[i].MaxForce.x : 0.0;
+            maximalForce[Vector3.up] += thrusters[i].MaxForce.y > 0.0 ? thrusters[i].MaxForce.y : 0.0;
+            maximalForce[Vector3.down] += thrusters[i].MaxForce.y < 0.0 ? thrusters[i].MaxForce.y : 0.0;
+            maximalForce[Vector3.forward] += thrusters[i].MaxForce.z > 0.0 ? thrusters[i].MaxForce.z : 0.0;
+            maximalForce[Vector3.back] += thrusters[i].MaxForce.z < 0.0 ? thrusters[i].MaxForce.z : 0.0;
 
-            //maximalTorque[Vector3.right] += thrusters[i].MaxTorque.x > 0.0 ? thrusters[i].MaxTorque.x : 0.0;
-            //maximalTorque[Vector3.left] += thrusters[i].MaxTorque.x < 0.0 ? thrusters[i].MaxTorque.x : 0.0;
-            //maximalTorque[Vector3.up] += thrusters[i].MaxTorque.y > 0.0 ? thrusters[i].MaxTorque.y : 0.0;
-            //maximalTorque[Vector3.down] += thrusters[i].MaxTorque.y < 0.0 ? thrusters[i].MaxTorque.y : 0.0;
-            //maximalTorque[Vector3.forward] += thrusters[i].MaxTorque.z > 0.0 ? thrusters[i].MaxTorque.z : 0.0;
-            //maximalTorque[Vector3.back] += thrusters[i].MaxTorque.z < 0.0 ? thrusters[i].MaxTorque.z : 0.0;
+            maximalTorque[Vector3.right] += thrusters[i].MaxTorque.x > 0.0 ? thrusters[i].MaxTorque.x : 0.0;
+            maximalTorque[Vector3.left] += thrusters[i].MaxTorque.x < 0.0 ? thrusters[i].MaxTorque.x : 0.0;
+            maximalTorque[Vector3.up] += thrusters[i].MaxTorque.y > 0.0 ? thrusters[i].MaxTorque.y : 0.0;
+            maximalTorque[Vector3.down] += thrusters[i].MaxTorque.y < 0.0 ? thrusters[i].MaxTorque.y : 0.0;
+            maximalTorque[Vector3.forward] += thrusters[i].MaxTorque.z > 0.0 ? thrusters[i].MaxTorque.z : 0.0;
+            maximalTorque[Vector3.back] += thrusters[i].MaxTorque.z < 0.0 ? thrusters[i].MaxTorque.z : 0.0;
 
-            maximalForce[Vector3.right] += thrusters[i].MaxForce.x ;
-            maximalForce[Vector3.left] += thrusters[i].MaxForce.x;
-            maximalForce[Vector3.up] += thrusters[i].MaxForce.y;
-            maximalForce[Vector3.down] -= thrusters[i].MaxForce.y;
-            maximalForce[Vector3.forward] -= thrusters[i].MaxForce.z ;
-            maximalForce[Vector3.back] -=  thrusters[i].MaxForce.z;
+            //maximalForce[Vector3.right] += thrusters[i].MaxForce.x ;
+            //maximalForce[Vector3.left] += thrusters[i].MaxForce.x;
+            //maximalForce[Vector3.up] += thrusters[i].MaxForce.y;
+            //maximalForce[Vector3.down] -= thrusters[i].MaxForce.y;
+            //maximalForce[Vector3.forward] -= thrusters[i].MaxForce.z ;
+            //maximalForce[Vector3.back] -=  thrusters[i].MaxForce.z;
 
-            maximalTorque[Vector3.right] +=  thrusters[i].MaxTorque.x;
-            maximalTorque[Vector3.left] +=  thrusters[i].MaxTorque.x ;
-            maximalTorque[Vector3.up] +=  thrusters[i].MaxTorque.y ;
-            maximalTorque[Vector3.down] -=  thrusters[i].MaxTorque.y;
-            maximalTorque[Vector3.forward] -=  thrusters[i].MaxTorque.z;
-            maximalTorque[Vector3.back] -=  thrusters[i].MaxTorque.z ;
+            //maximalTorque[Vector3.right] +=  thrusters[i].MaxTorque.x;
+            //maximalTorque[Vector3.left] +=  thrusters[i].MaxTorque.x ;
+            //maximalTorque[Vector3.up] +=  thrusters[i].MaxTorque.y ;
+            //maximalTorque[Vector3.down] -=  thrusters[i].MaxTorque.y;
+            //maximalTorque[Vector3.forward] -=  thrusters[i].MaxTorque.z;
+            //maximalTorque[Vector3.back] -=  thrusters[i].MaxTorque.z ;
 
             //maximalCost +=
             //    thrusters[i].MaxCost > 0.0 &&
@@ -364,18 +364,18 @@ public class Test : MonoBehaviour
         // 2 inactive
         // 1 inactive
 
-        //thust mindre når torque
-        int thrustpriorityactive = ControlTorqueDirection != Vector3.zero ? 3 : 4; //foruden alle er sat og inaktive udgår
+        //thust mindre nÃ¥r torque
+        int thrustpriorityactive = ControlTorqueDirection != Vector3.zero ? 3 : 4; //foruden alle er sat og inaktive udgÃ¥r
         int thrustpriorityinactive = ControlTorqueDirection != Vector3.zero ? 1 : 2;
 
-        //torque mindre når thrust og ikke torque
+        //torque mindre nÃ¥r thrust og ikke torque
         int torquepriorityactive = ControlTorqueDirection == Vector3.zero || ControlThrustDirection != Vector3.zero ? 3 : 4;
-        int torquepriorityinactive = ControlTorqueDirection == Vector3.zero || ControlThrustDirection != Vector3.zero ? 1 : 2; //foruden alle er sat og inaktive udgår
+        int torquepriorityinactive = ControlTorqueDirection == Vector3.zero || ControlThrustDirection != Vector3.zero ? 1 : 2; //foruden alle er sat og inaktive udgÃ¥r
 
-        //int thrustpriorityactive = 4; //foruden alle er sat og inaktive udgår
+        //int thrustpriorityactive = 4; //foruden alle er sat og inaktive udgÃ¥r
         //int thrustpriorityinactive = 2;
 
-        //torque mindre når thrust og ikke torque
+        //torque mindre nÃ¥r thrust og ikke torque
         //int torquepriorityactive = 3;
         //int torquepriorityinactive = 1;
 
@@ -391,7 +391,7 @@ public class Test : MonoBehaviour
                 Bound = new SolverRequestBound { Lower = 0, Upper = 1 }, //Er 1 upperbound rigtig?
                 Goal = new SolverGoal { Priority = thrusterpriority, Minimize = true },
                 Info = thrusters[i].LocalPosition.ToString()
-            }); //Brug så meget thrust som muligt (skal det have større prio?
+            }); //Brug sÃ¥ meget thrust som muligt (skal det have stÃ¸rre prio?
                 
         }
 
@@ -505,7 +505,7 @@ public class Test : MonoBehaviour
         for (int i = 0; i < variablecount; i++)
         {
             solverRequest.Coefficients[i, 0] = (int)thrusters[i].MaxForce.x;
-            solverRequest.Coefficients[i, 1] = (int)thrusters[i].MaxForce.y;// * -1; //Når der minimeres vendes coefficenten (og hvad mere skal der ske?)
+            solverRequest.Coefficients[i, 1] = (int)thrusters[i].MaxForce.y;// * -1; //NÃ¥r der minimeres vendes coefficenten (og hvad mere skal der ske?)
             solverRequest.Coefficients[i, 2] = (int)thrusters[i].MaxForce.z;
             solverRequest.Coefficients[i, 3] = (int)thrusters[i].MaxTorque.x;
             solverRequest.Coefficients[i, 4] = (int)thrusters[i].MaxTorque.y;
