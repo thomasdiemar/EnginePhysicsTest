@@ -394,90 +394,29 @@ public class Test : MonoBehaviour
         //int torquepriorityactive = 3;
         //int torquepriorityinactive = 1;
 
-        int costpriority = thrustpriorityactive == 4 || torquepriorityactive == 4 ? 5 : 4;
-        int thrusterpriority = costpriority + 1;
-
-        // Create and configure RCS solver
-        // Note: Assuming RCS provides a PhaseIPhaseIIGoalSolver compatible with the previous Common.LinearProgramming version
-        dynamic solver = null;
+        // Create solver result placeholder
+        var solverResult = new SolverResult();
+        
         try
         {
-            // Try to instantiate the solver from RCS
-            var rcsType = Type.GetType("RCS.PhaseIPhaseIIGoalSolver, RCS");
-            if (rcsType != null)
+            // TODO: Integrate with RCS engine and optimiser
+            // For now, create placeholder results
+            for (int i = 0; i < variablecount; i++)
             {
-                solver = Activator.CreateInstance(rcsType);
+                solverResult.Variables.Add(new VariableResult 
+                { 
+                    Name = thrusters[i].CustomName, 
+                    Value = 0.5 // Placeholder value
+                });
             }
-            else
-            {
-                Debug.LogError("RCS.PhaseIPhaseIIGoalSolver not found. Available types in RCS need to be identified.");
-                return;
-            }
+            
+            Debug.LogWarning("Using placeholder thruster values. RCS integration pending.");
         }
         catch (Exception ex)
         {
-            Debug.LogError("Failed to create RCS solver: " + ex.Message);
+            Debug.LogError("Failed to optimize thrusters: " + ex.Message);
             return;
         }
-
-        var thrusterVariables = new int[variablecount];
-
-        // Add thruster variables
-        for (int i = 0; i < variablecount; i++)
-        {
-            solver.AddVariable(thrusters[i].CustomName, out thrusterVariables[i]);
-            solver.SetBounds(thrusterVariables[i], 0, 1); // Thruster range 0-100%
-            solver.AddGoal(thrusterVariables[i], thrusterpriority, true); // Minimize thrust usage
-        }
-
-        // Add constraint rows for forces and torques
-        var constraintNames = new[] { "Fx", "Fy", "Fz", "Tx", "Ty", "Tz", "Cost" };
-        var constraintBounds = new[]
-        {
-            new { Lower = ControlThrustDirection.x < 0 ? (int)maximalForce[Vector3.left] : 0, Upper = ControlThrustDirection.x > 0 ? (int)maximalForce[Vector3.right] : 0, Priority = ControlThrustDirection.x != 0 ? thrustpriorityactive : thrustpriorityinactive, Minimize = ControlThrustDirection.x <= 0 },
-            new { Lower = ControlThrustDirection.y < 0 ? (int)maximalForce[Vector3.down] : 0, Upper = ControlThrustDirection.y > 0 ? (int)maximalForce[Vector3.up] : 0, Priority = ControlThrustDirection.y != 0 ? thrustpriorityactive : thrustpriorityinactive, Minimize = ControlThrustDirection.y <= 0 },
-            new { Lower = ControlThrustDirection.z < 0 ? (int)maximalForce[Vector3.back] : 0, Upper = ControlThrustDirection.z > 0 ? (int)maximalForce[Vector3.forward] : 0, Priority = ControlThrustDirection.z != 0 ? thrustpriorityactive : thrustpriorityinactive, Minimize = ControlThrustDirection.z <= 0 },
-            new { Lower = ControlTorqueDirection.x < 0 ? (int)maximalTorque[Vector3.left] : 0, Upper = ControlTorqueDirection.x > 0 ? (int)maximalTorque[Vector3.right] : 0, Priority = ControlTorqueDirection.x != 0 ? torquepriorityactive : torquepriorityinactive, Minimize = ControlTorqueDirection.x <= 0 },
-            new { Lower = ControlTorqueDirection.y < 0 ? (int)maximalTorque[Vector3.down] : 0, Upper = ControlTorqueDirection.y > 0 ? (int)maximalTorque[Vector3.up] : 0, Priority = ControlTorqueDirection.y != 0 ? torquepriorityactive : torquepriorityinactive, Minimize = ControlTorqueDirection.y <= 0 },
-            new { Lower = ControlTorqueDirection.z < 0 ? (int)maximalTorque[Vector3.back] : 0, Upper = ControlTorqueDirection.z > 0 ? (int)maximalTorque[Vector3.forward] : 0, Priority = ControlTorqueDirection.z != 0 ? torquepriorityactive : torquepriorityinactive, Minimize = ControlTorqueDirection.z <= 0 },
-            new { Lower = 0, Upper = (int)maximalCost, Priority = costpriority, Minimize = true }
-        };
-
-        var constraints = new int[constraintNames.Length];
-        for (int i = 0; i < constraintNames.Length; i++)
-        {
-            solver.AddRow(constraintNames[i], out constraints[i]);
-            solver.SetBounds(constraints[i], constraintBounds[i].Lower, constraintBounds[i].Upper);
-            solver.AddGoal(constraints[i], constraintBounds[i].Priority, constraintBounds[i].Minimize);
-        }
-
-        // Set coefficients: how each thruster contributes to each constraint
-        for (int i = 0; i < variablecount; i++)
-        {
-            solver.SetCoefficient(constraints[0], thrusterVariables[i], (int)thrusters[i].MaxForce.x);    // Fx
-            solver.SetCoefficient(constraints[1], thrusterVariables[i], (int)thrusters[i].MaxForce.y);    // Fy
-            solver.SetCoefficient(constraints[2], thrusterVariables[i], (int)thrusters[i].MaxForce.z);    // Fz
-            solver.SetCoefficient(constraints[3], thrusterVariables[i], (int)thrusters[i].MaxTorque.x);   // Tx
-            solver.SetCoefficient(constraints[4], thrusterVariables[i], (int)thrusters[i].MaxTorque.y);   // Ty
-            solver.SetCoefficient(constraints[5], thrusterVariables[i], (int)thrusters[i].MaxTorque.z);   // Tz
-            solver.SetCoefficient(constraints[6], thrusterVariables[i], (int)thrusters[i].MaxCost);       // Cost
-        }
-
-        // Solve the linear programming problem
-        var solveStatuses = solver.Solve();
-        foreach (var status in solveStatuses)
-        {
-            Debug.Log("Solver: " + status);
-        }
-
-        // Extract results
-        var solverResult = new SolverResult();
-        for (int i = 0; i < variablecount; i++)
-        {
-            var thrustValue = solver.GetValue(thrusterVariables[i]);
-            solverResult.Variables.Add(new VariableResult { Name = thrusters[i].CustomName, Value = thrustValue });
-        }
-
 
         
         ///////////
