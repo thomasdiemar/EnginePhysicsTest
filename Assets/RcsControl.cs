@@ -20,56 +20,49 @@ public class RcsControl : MonoBehaviour
         Debug.Assert(Capsule != null);
 
         Debug.Log(Capsule.name + " - " + Capsule.GetType().ToString());
- 
+
         var engines = Capsule.GetComponentsInChildren<FixedJoint>();
-        var thrusters = new Dictionary<string,RcsThruster>();
+        var thrusters = new Dictionary<string, RcsThruster>();
         foreach (var engineJoint in engines)
         {
-            Debug.Log("Engine: " + engineJoint.gameObject.name);
             var localPos = engineJoint.transform.localPosition;
-            Debug.Log(engineJoint.gameObject.name+" Local position: " + localPos);
             var localBackward = -(engineJoint.transform.localRotation * Vector3.forward);
-            localBackward *= thrustPower;
-            Debug.Log($"{engineJoint.gameObject.name} backward: {localBackward}");
-
             localBackward *= thrustPower;
 
             thrusters.Add(
                 engineJoint.gameObject.name,
                 new RcsThruster(
-                    new RcsVector<int>((int)Mathf.Round(localPos.x), (int)Mathf.Round(localPos.y), (int)Mathf.Round(localPos.z)),
-                    new RcsVector<int>((int)Mathf.Round(localBackward.x), (int)Mathf.Round(localBackward.y), (int)Mathf.Round(localBackward.z))
+                    new RcsVector<int>((int)Mathf.Round(localBackward.x), (int)Mathf.Round(localBackward.y), (int)Mathf.Round(localBackward.z)),
+                    new RcsVector<int>((int)Mathf.Round(localPos.x), (int)Mathf.Round(localPos.y), (int)Mathf.Round(localPos.z))
                 )
             );
         }
 
+        foreach (var thruster in thrusters)
+        {
+            Debug.Log($"Thruster {thruster.Key}: Position {thruster.Value.Position.X},{thruster.Value.Position.Y},{thruster.Value.Position.Z}, Direction {thruster.Value.Direction.X},{thruster.Value.Direction.Y},{thruster.Value.Direction.Z}");
+        }
+
         var capsulerigidbody = Capsule.GetComponent<Rigidbody>();
         var shipcenterofmass = capsulerigidbody.centerOfMass;
-        Debug.Log("Ship Center of Mass: " + shipcenterofmass.ToString());
 
         var engine = new RcsEngine(thrusters);
-        
-        // Convert center of mass from float to int RcsVector for RcsEngine
+
         var centerOfMassInt = new RcsVector<int>(
             (int)Mathf.Round(shipcenterofmass.x),
             (int)Mathf.Round(shipcenterofmass.y),
             (int)Mathf.Round(shipcenterofmass.z)
         );
         engine.CenterOfMass = centerOfMassInt;
-
-        try
-        {
-           var optimiser = new RcsEngineOptimiser<LinearSolver.Custom.GoalProgramming.PreEmptive.BoundedInteger.Simplex.LexicographicGoalSolver>();
-           var command = new RcsCommand(new RcsVector<Fraction>(0, 0, -1), new RcsVector<Fraction>());
-           var result = optimiser.Optimise(engine, command).Last().Result;
-           LogResult(Capsule.GetType().ToString(), result);
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError("Optimization failed: " + ex.Message);
-        }
-
+        Debug.Log($"Engine Center of Mass: {engine.CenterOfMass.X},{engine.CenterOfMass.Y},{engine.CenterOfMass.Z} ");
+        
+        var optimiser = new RcsEngineOptimiser<LinearSolver.Custom.GoalProgramming.PreEmptive.BoundedInteger.Simplex.LexicographicGoalSolver>();
+        var command = new RcsCommand(new RcsVector<Fraction>(0, 0, -1), new RcsVector<Fraction>(0,0,0));
+        var result = optimiser.Optimise(engine, command).ToList().Last().Result;
+        LogResult(Capsule.GetType().ToString(), result);
+               
     }
+
 
     // Update is called once per frame
     void Update()
