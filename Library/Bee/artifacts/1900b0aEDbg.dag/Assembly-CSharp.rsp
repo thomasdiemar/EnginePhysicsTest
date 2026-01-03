@@ -119,6 +119,7 @@
 -define:CSHARP_7_3_OR_NEWER
 -r:"Assets/FluentAssertions.Core.dll"
 -r:"Assets/FluentAssertions.dll"
+-r:"Assets/LinearSolver.Custom.GoalProgramming.dll"
 -r:"Assets/LinearSolver.dll"
 -r:"Assets/RCS.dll"
 -r:"C:/Program Files/Unity/Hub/Editor/2021.3.4f1/Editor/Data/Managed/UnityEngine/UnityEditor.CoreModule.dll"

@@ -5,6 +5,7 @@ using System.Text;
 using UnityEngine;
 using RCS;
 using LinearSolver;
+using LinearSolver.Custom.GoalProgramming;
 
 public class RcsControl : MonoBehaviour
 {
@@ -22,21 +23,22 @@ public class RcsControl : MonoBehaviour
  
         var engines = Capsule.GetComponentsInChildren<FixedJoint>();
         var thrusters = new Dictionary<string,RcsThruster>();
-        foreach (var engine in engines)
+        foreach (var engineJoint in engines)
         {
-            Debug.Log("Engine: " + engine.gameObject.name);
-            var localPos = engine.transform.localPosition;
-            Debug.Log(engine.gameObject.name+" Local position: " + localPos);
-            var localBackward = -(engine.transform.localRotation * Vector3.forward);
-            Debug.Log($"{engine.gameObject.name} backward: {localBackward}");
+            Debug.Log("Engine: " + engineJoint.gameObject.name);
+            var localPos = engineJoint.transform.localPosition;
+            Debug.Log(engineJoint.gameObject.name+" Local position: " + localPos);
+            var localBackward = -(engineJoint.transform.localRotation * Vector3.forward);
+            localBackward *= thrustPower;
+            Debug.Log($"{engineJoint.gameObject.name} backward: {localBackward}");
 
             localBackward *= thrustPower;
 
             thrusters.Add(
-                engine.gameObject.name,
+                engineJoint.gameObject.name,
                 new RcsThruster(
-                    new RcsVector<int>((int)localPos.x, (int)localPos.y, (int)localPos.z),
-                    new RcsVector<int>((int)localBackward.x, (int)localBackward.y, (int)localBackward.z)
+                    new RcsVector<int>((int)Mathf.Round(localPos.x), (int)Mathf.Round(localPos.y), (int)Mathf.Round(localPos.z)),
+                    new RcsVector<int>((int)Mathf.Round(localBackward.x), (int)Mathf.Round(localBackward.y), (int)Mathf.Round(localBackward.z))
                 )
             );
         }
@@ -46,14 +48,26 @@ public class RcsControl : MonoBehaviour
         Debug.Log("Ship Center of Mass: " + shipcenterofmass.ToString());
 
         var engine = new RcsEngine(thrusters);
-        engine.CenterOfMass = new RcsVector<Fraction>(new Fraction(shipcenterofmass.x), new Fraction(shipcenterofmass.y), new Fraction(shipcenterofmass.z));
+        
+        // Convert center of mass from float to int RcsVector for RcsEngine
+        var centerOfMassInt = new RcsVector<int>(
+            (int)Mathf.Round(shipcenterofmass.x),
+            (int)Mathf.Round(shipcenterofmass.y),
+            (int)Mathf.Round(shipcenterofmass.z)
+        );
+        engine.CenterOfMass = centerOfMassInt;
 
-        var optimiser = new RcsEngineOptimiser<LinearSolver.Custom.GoalProgramming.PreEmptive.BoundedInteger.Simplex.LexicographicGoalSolver>();
-
-        var command = new RcsCommand(new RcsVector<Fraction>(0, 0, -1), new RcsVector<Fraction>());
-        var result = optimiser.Optimise(engine, command).Last().Result;
-
-        LogResult(Capsule.GetType().ToString(), result);
+        try
+        {
+           var optimiser = new RcsEngineOptimiser<LinearSolver.Custom.GoalProgramming.PreEmptive.BoundedInteger.Simplex.LexicographicGoalSolver>();
+           var command = new RcsCommand(new RcsVector<Fraction>(0, 0, -1), new RcsVector<Fraction>());
+           var result = optimiser.Optimise(engine, command).Last().Result;
+           LogResult(Capsule.GetType().ToString(), result);
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError("Optimization failed: " + ex.Message);
+        }
 
     }
 
@@ -69,14 +83,17 @@ public class RcsControl : MonoBehaviour
         foreach (var output in result.ThrusterOutputs.OrderBy(t => t.Key))
             Debug.Log($"{output.Key}: {output.Value:F6}");
 
-        Debug.Log("n=== Resultant Force ===");
+        Debug.Log("=== Resultant Force ===");
         Debug.Log($"Fx: {result.ResultantForce.X:F6}");
         Debug.Log($"Fy: {result.ResultantForce.Y:F6}");
         Debug.Log($"Fz: {result.ResultantForce.Z:F6}");
 
-        Debug.Log("n=== Resultant Torque ===");
+        Debug.Log("=== Resultant Torque ===");
         Debug.Log($"Tx: {result.ResultantTorque.X:F6}");
         Debug.Log($"Ty: {result.ResultantTorque.Y:F6}");
         Debug.Log($"Tz: {result.ResultantTorque.Z:F6}");
     }
 }
+
+
+
